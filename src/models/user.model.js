@@ -1,86 +1,94 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import jsonwebtoken from "jsonwebtoken";
+import jwt from "jsonwebtoken"; // ✅ Fixed alias
 
 const userSchema = new mongoose.Schema({
-    username:{
+    username: {
         type: String,
-        requied: true,
+        required: true,
         unique: true,
         lowercase: true,
         index: true,
         trim: true
     },
-    email:{
+    email: {
         type: String,
-        requied: true,
+        required: true,
         unique: true,
         lowercase: true,
         trim: true
     },
-    fullname :{
+    fullname: {
         type: String,
-        requied: true,
+        required: true,
         index: true,
         trim: true
     },
-    avatar:{
-        type: String,//cloud url
-        requied: true
+    avatar: {
+        type: String, // Cloudinary URL
+        required: true
     },
     coverImg: {
-        type: String //cloud url
+        type: String
     },
-    watchHistory:[
+    watchHistory: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Video"
         }
     ],
-    password:{
+    password: {
         type: String,
-        requied: [true,"Please enter password"]
+        required: [true, "Please enter password"]
     },
-    refreshTokens:{
+    refreshTokens: {
         type: String
     }
-},{timestamps:true})
+}, { timestamps: true });
 
-userSchema.pre("save", async function (){
-    if(!this.isModified("password")) return next();
-    this.password = await bcrypt.password(this.password,10)
-    next()
-})
+// ✅ Pre-save hook to hash password
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
 
-userSchema.method.isPasswordCorrect = async function(password){
-    return await bcrypt.compare(password,this.password);
-}
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
 
-userSchema.method.generateAccessToken =  function () {
+// ✅ Compare password method
+userSchema.method.isPasswordCorrect = async function (password) {
+    return await bcrypt.compare(password, this.password);
+};
+
+// ✅ Generate Access Token
+userSchema.method.generateAccessToken = function () {
     return jwt.sign(
         {
-            _id : this._id,
-            email : this.email,
-            fullname : this.fullname,
-            username : this.username
+            _id: this._id,
+            email: this.email,
+            fullname: this.fullname,
+            username: this.username
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
-    )
-}
+    );
+};
 
-userSchema.method.generateRefreshToken =  function () {
+// ✅ Generate Refresh Token
+userSchema.method.generateRefreshToken = function () {
     return jwt.sign(
-        {
-            _id : this._id,
-        },
+        { _id: this._id },
         process.env.REFRESH_TOKEN_SECRET,
         {
             expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
-    )
-}
+    );
+};
 
-export const User = new mongoose.model("User",userSchema)
+export const User = mongoose.model("User", userSchema);
