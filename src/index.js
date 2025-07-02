@@ -25,6 +25,7 @@ import {app} from "./app.js"
 dotenv.config({
     path:'./.env'
 })
+//console.log("📦 index.js started executing");
 
 connectDB()
 .then(() => {

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken"; // ✅ Fixed alias
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, "Please enter password"]
     },
-    refreshTokens: {
+    refreshToken: {
         type: String
     }
 }, { timestamps: true });
@@ -60,12 +60,12 @@ userSchema.pre("save", async function (next) {
 });
 
 // ✅ Compare password method
-userSchema.method.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
 
 // ✅ Generate Access Token
-userSchema.method.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             _id: this._id,
@@ -81,7 +81,7 @@ userSchema.method.generateAccessToken = function () {
 };
 
 // ✅ Generate Refresh Token
-userSchema.method.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         { _id: this._id },
         process.env.REFRESH_TOKEN_SECRET,
